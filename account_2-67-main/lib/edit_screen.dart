@@ -3,14 +3,16 @@ import 'package:account/provider/performance_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class FormScreen extends StatefulWidget {
-  const FormScreen({super.key});
+class EditScreen extends StatefulWidget {
+  PerformanceItem item;
+
+  EditScreen({super.key, required this.item});
 
   @override
-  State<FormScreen> createState() => _FormScreenState();
+  State<EditScreen> createState() => _EditScreenState();
 }
 
-class _FormScreenState extends State<FormScreen> {
+class _EditScreenState extends State<EditScreen> {
   final formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
   final locationController = TextEditingController();
@@ -19,10 +21,15 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    titleController.text = widget.item.title;
+    locationController.text = widget.item.location;
+    descriptionController.text = widget.item.description;
+    ticketPriceController.text = widget.item.ticketPrice.toString();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Input Performance'),
+        title: const Text('Edit Performance'),
       ),
       body: Form(
         key: formKey,
@@ -78,23 +85,25 @@ class _FormScreenState extends State<FormScreen> {
             ElevatedButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  // ทำการเพิ่มข้อมูล
+                  // ทำการอัปเดตข้อมูล
                   var provider = Provider.of<PerformanceProvider>(context, listen: false);
 
                   PerformanceItem item = PerformanceItem(
+                    keyID: widget.item.keyID,
                     title: titleController.text,
                     location: locationController.text,
                     description: descriptionController.text,
                     ticketPrice: double.parse(ticketPriceController.text),
-                    date: DateTime.now(),
+                    date: widget.item.date,
                   );
 
-                  provider.addPerformance(item);
+                  provider.updatePerformance(item);
+
                   // ปิดหน้าจอ
                   Navigator.pop(context);
                 }
               },
-              child: const Text('เพิ่มข้อมูลการแสดง'),
+              child: const Text('แก้ไขข้อมูลการแสดง'),
             ),
           ],
         ),

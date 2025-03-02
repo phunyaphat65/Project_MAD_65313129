@@ -1,9 +1,12 @@
-import 'package:account/model/transactionItem.dart';
-import 'package:account/provider/transactionProvider.dart';
-import 'package:flutter/material.dart';
-import 'formScreen.dart';
-import 'package:account/editScreen.dart';
+ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+// ใช้ alias เพื่อป้องกันชื่อซ้ำ
+import 'formScreen.dart' as form;
+import 'edit_screen.dart' as edit;
+
+import 'package:account/provider/performance_provider.dart';
+import 'package:account/model/performanceItem.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,29 +15,35 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (context) {
-            return TransactionProvider();
-          })
-        ],
-        child: MaterialApp(
-          title: 'Flutter Demo',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
+      providers: [
+        ChangeNotifierProvider(create: (context) => PerformanceProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Theater Performances',
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+          scaffoldBackgroundColor: Colors.black,
+          textTheme: const TextTheme(
+            bodyMedium: TextStyle(color: Colors.white, fontSize: 16),
           ),
-          home: const MyHomePage(title: 'Flutter Demo Home Page'),
-        ));
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            titleTextStyle: TextStyle(color: Colors.amber, fontSize: 22),
+          ),
+        ),
+        home: const MyHomePage(title: 'Theater Performances'),
+      ),
+    );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
   final String title;
 
   @override
@@ -45,111 +54,120 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
-    TransactionProvider provider =
-        Provider.of<TransactionProvider>(context, listen: false);
-    provider.initData();
+    Provider.of<PerformanceProvider>(context, listen: false).initData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(widget.title),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  return FormScreen();
-                }));
-              },
-            ),
-          ],
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text(widget.title),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.amber),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return form.FormScreen();  // ✅ ใช้ prefix form.
+              }));
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.black, Colors.deepPurple],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-        body: Consumer(
-          builder: (context, TransactionProvider provider, Widget? child) {
-            int itemCount = provider.transactions.length;
+        child: Consumer<PerformanceProvider>(
+          builder: (context, provider, child) {
+            int itemCount = provider.performances.length;
             if (itemCount == 0) {
-              return Center(
+              return const Center(
                 child: Text(
-                  'ไม่มีรายการ',
-                  style: TextStyle(fontSize: 50),
+                  'ไม่มีการแสดง',
+                  style: TextStyle(fontSize: 24, color: Colors.white),
                 ),
               );
             } else {
-              return ListView.builder(
-                  itemCount: itemCount,
-                  itemBuilder: (context, int index) {
-                    TransactionItem data = provider.transactions[index];
-                    return Dismissible(
-                      key: Key(data.keyID.toString()),
-                      direction: DismissDirection.horizontal,
-                      onDismissed: (direction) {
-                        provider.deleteTransaction(data);
-                      },
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: const Icon(Icons.edit, color: Colors.white),
+              return GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.8,
+                ),
+                itemCount: itemCount,
+                itemBuilder: (context, index) {
+                  PerformanceItem data = provider.performances[index];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) {
+                            return edit.EditScreen(item: data);  // ✅ ใช้ prefix edit.
+                          },
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(opacity: animation, child: child);
+                          },
+                        ),
+                      );
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                        gradient: const LinearGradient(
+                          colors: [Colors.deepPurple, Colors.black],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
-                      child: Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        child: ListTile(
-                            title: Text(data.title),
-                            subtitle: Text(
-                                'วันที่บันทึกข้อมูล: ${data.date?.toIso8601String()}',
-                                style: TextStyle(fontSize: 10)),
-                            leading: CircleAvatar(
-                              child: FittedBox(
-                                child: Text(data.amount.toString()),
-                              ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            data.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: Text('ยืนยันการลบ'),
-                                      content:
-                                          Text('คุณต้องการลบรายการใช่หรือไม่?'),
-                                      actions: [
-                                        TextButton(
-                                          child: Text('ยกเลิก'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          child: Text('ลบรายการ'),
-                                          onPressed: () {
-                                            provider.deleteTransaction(data);
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                            onTap: () {
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
-                                return EditScreen(item: data);
-                              }));
-                            }),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'วันที่: ${data.date?.toIso8601String().split('T')[0]}',
+                            style: const TextStyle(color: Colors.amber, fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                    );
-                  });
+                    ),
+                  );
+                },
+              );
             }
           },
-        ));
+        ),
+      ),
+    );
   }
 }
