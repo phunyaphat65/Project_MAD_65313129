@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // ใช้ alias เพื่อป้องกันชื่อซ้ำ
@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
             titleTextStyle: TextStyle(color: Colors.amber, fontSize: 22),
           ),
         ),
-        home: const MyHomePage(title: 'Theater Performances'),
+        home: const MyHomePage(title: 'การแสดงละครเวที'),
       ),
     );
   }
@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: const Icon(Icons.add, color: Colors.amber),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) {
-                return form.FormScreen();  // ✅ ใช้ prefix form.
+                return form.FormScreen();
               }));
             },
           ),
@@ -95,12 +95,12 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             } else {
               return GridView.builder(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.only(top: kToolbarHeight + 16, left: 12, right: 12, bottom: 12),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 0.8,
+                  crossAxisCount: 6, // ปรับให้การ์ดมีขนาดที่เหมาะสม
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.7, // ✅ ทำให้การ์ดมีขนาดพอดี
                 ),
                 itemCount: itemCount,
                 itemBuilder: (context, index) {
@@ -111,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) {
-                            return edit.EditScreen(item: data);  // ✅ ใช้ prefix edit.
+                            return edit.EditScreen(item: data);
                           },
                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                             return FadeTransition(opacity: animation, child: child);
@@ -122,12 +122,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withOpacity(0.5),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
@@ -138,27 +137,82 @@ class _MyHomePageState extends State<MyHomePage> {
                           end: Alignment.bottomRight,
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            data.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            Positioned.fill(
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      data.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'วันที่: ${data.date?.toIso8601String().split('T')[0]}',
+                                      style: const TextStyle(color: Colors.amber, fontSize: 12),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'วันที่: ${data.date?.toIso8601String().split('T')[0]}',
-                            style: const TextStyle(color: Colors.amber, fontSize: 12),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: const Text('ยืนยันการลบ'),
+                                          content: const Text('คุณต้องการลบการแสดงนี้ใช่หรือไม่?'),
+                                          actions: [
+                                            TextButton(
+                                              child: const Text('ยกเลิก'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            TextButton(
+                                              child: const Text('ลบ', style: TextStyle(color: Colors.red)),
+                                              onPressed: () {
+                                                if (data.keyID != null) {
+                                                  provider.deletePerformance(data.keyID!);
+                                                } else {
+                                                  debugPrint("❌ keyID เป็น null");
+                                                }
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
